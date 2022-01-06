@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import { ethers } from 'ethers';
 
-const CONTRACT_ADDRESS = '0xc51fC2Df60f763157c4BdEDEcA0521a8D9c051e0';
+const CONTRACT_ADDRESS = '0xfd328d8f1E133DAcF6a74AD5bADcA1AdFdB3709a';
 import NFTwitter from './utils/NFTwitterContract.json';
 
 const App = () => {
@@ -11,6 +11,7 @@ const [currentAccount, setCurrentAccount] = useState(null);
 const [contract, setContract] = useState(null);
 const [inputTweet, setInputTweet] = useState('')
 const [tweets, setTweets] = useState([])
+const [canPost, setCanPost] = useState(false)
 
 const loadContract = async () => {
   const { ethereum } = window;
@@ -31,6 +32,7 @@ const loadContract = async () => {
 
 const readTweet = (data) => {
   return {
+    tweetId: data.tweetId,
     parentId: data.parentId.toNumber(),
     content: data.content,
     timestamp: data.timestamp.toNumber(),
@@ -48,6 +50,12 @@ const loadTweets = async () => {
       const result = getTweetsTxn.map((tw) => readTweet(tw) );
       result.reverse()
       setTweets(result);
+    }
+    else
+    {    {
+      setTweets([]);
+    }
+      setTweets([]);
     }
   }
   catch (error) {
@@ -120,73 +128,104 @@ const checkNetwork = async () => {
   }
 }
 
+const renderTweet = (tweet) => {
+  return (
+      <div className="tweet" id={ "tweet" + tweet.tweetId }>
+        <span> Owner : { tweet.owner } </span> 
+        { tweet.owner !== tweet.author && (<span><br/> Original author : { tweet.author } </span> )}
+        <div className="tweetContent"> 
+          { tweet.content } 
+        </div>  
+        <div className="tweetBtnContainer">
+          <button className="replyBtn" onClick={() => postTweet(tweet.tweetId)}> Reply </button>
+          <button className="viewOnOSBtn" onClick={() => window.open("https://testnets.opensea.io/assets/" +  CONTRACT_ADDRESS + "/" + tweet.tweetId)}> View on OpenSea </button>
+        </div>
+        <div className="childTweet"> 
+        {
+          tweets.filter(x => x.parentId == tweet.tweetId).map(child => 
+          (
+            renderTweet(child)
+          ))
+        }
+        </div>
+      </div>
+  )
+}
+
 const renderTweets = () => { 
   return ( <div className="tweets"> 
   { 
-    tweets.map((tweet) => 
+    tweets.filter(x => x.parentId == 0).map((tweet) => 
     (
-      <div className="tweet">
-        <span> Owner : { tweet.owner } </span>
-        { tweet.owner !== tweet.author && (<span> Original author : { tweet.author } </span> )}
-        <p> { tweet.content } </p>  
-      </div>
+      renderTweet(tweet)
     ))
   } 
   </div>
   );
 }
 
-const postTweet = async () => {
-  try
+const postTweet = async (parentId) => {
+  if(canPost)
   {
-    if(contract)
+    try
     {
-      const postTxn = await contract.tweet(inputTweet, 0);
-      await postTxn.wait();
+      if(contract)
+      {
+        const postTxn = await contract.tweet(inputTweet, parentId);
+        await postTxn.wait();
+
+        setInputTweet("")
+      }
+    }
+    catch(error) {
+      console.warn("Post tweet Error: ", error);
     }
   }
-  catch(error) {
-    console.warn("Post tweet Error: ", error);
+  else
+  {
+    alert("Write a tweet first.");
   }
 }
 
 const renderPostTweet = () => {
   return (
-    <div> 
-      <textarea value={inputTweet} onInput={e => setInputTweet(e.target.value)}/>
-      <button onClick={postTweet}> 
-        Post Tweet
-      </button>
-    </div>
+    <footer>
+      <div className="postDiv"> 
+        <textarea value={inputTweet} onInput={e => setInputTweet(e.target.value)}/>
+        <button onClick={() => postTweet(0)}> 
+          Post Tweet
+        </button>
+      </div>
+    </footer>
   );
 }
 
 const renderContent = () => {
-
   if(!currentAccount)
   {
-    return ( 
-      <div>
-       { tweets && renderTweets() } 
-     <button
-          onClick={connectWalletAction}
-        > Connect Metamask </button>
-        </div>
+    return (
+      <div className="tweetsDiv">
+        <button
+          onClick={connectWalletAction}> 
+          Connect Metamask 
+        </button>
+
+      { tweets && renderTweets() } 
+      </div>
     );
   }
   else
   {
     return (
-      <div>
-      { tweets && renderTweets() } 
-      { renderPostTweet() }
-    </div>
+      <div className="tweetsDiv">
+        { tweets && renderTweets() } 
+        { renderPostTweet() }
+      </div>
     );
   }
 }
 
 useEffect(() => {
-  loadContract();
   checkIfWalletIsConnected();
 }, []);
 
@@ -199,13 +238,14 @@ useEffect(() => {
 
 useEffect(() => {
   checkNetwork();
+  loadContract();
 }, [currentAccount]);
 
-return ( 
-  <div>
-  {renderContent()}
-  </div>
-  );
+useEffect(() => {
+  setCanPost(inputTweet.length > 0)
+}, [inputTweet])
+//button to see full collection on OS
+return renderContent();
 };
 
 export default App;

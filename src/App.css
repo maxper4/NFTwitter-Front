@@ -1,5 +1,98 @@
 main {
+  margin: 0 auto;
   text-align: center;
   vertical-align: center;
-  line-height: 100vh
+  line-height: 100vh;
+}
+
+body {
+  background-color: #222222;
+  color: white;
+  padding-top: 100px;
+}
+
+.tweetsDiv {
+  margin-top: 2em;
+  width: 100%;
+  text-align: center;
+  z-index: 0;
+}
+
+header {
+  width: 100%;
+  position: fixed;
+  top: 0;
+  margin: 10px auto;
+  text-align: center;
+  z-index: 1;
+}
+
+footer {
+  width: 100%;
+  position: fixed;
+  bottom: 3em;
+  margin-bottom: 10px;
+  z-index: 1;
+}
+
+footer::after {
+  right: 0;
+  bottom: 0;
+  position: fixed;
+  content: "Made by maxper (twitter @maxenceperion) in React and Solidity. All Sources are on my GitHub (@maxper4).";
+}
+
+.postDiv {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: solid 1px #9db4a6;
+  padding: 5px;
+  background-color: black;
+}
+
+textarea {
+  width: 300px;
+  height: 50px;
+}
+
+.postDiv * {
+  margin: 5px;
+}
+
+.tweet {
+  border: solid 3px #4f532b;
+  display: inline-block;
+  padding: 5px;
+  position: relative;
+}
+
+.tweetContent {
+  border-top: 1px solid #4f532b;
+  border-bottom: 1px solid #4f532b;
+}
+
+.childTweet {
+  margin-left: 25px;
+}
+
+button {
+  border-radius: 10px;
+}
+
+.tweetBtnContainer {
+  height: 1.5em;
+  vertical-align: center;
+}
+
+.viewOnOSBtn {
+  left: 2px;
+  position: absolute;
+  bottom:2px;
+}
+
+.replyBtn {
+  right: 2px;
+  position: absolute;
+  bottom:2px;
 }
