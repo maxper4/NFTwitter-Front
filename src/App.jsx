@@ -136,7 +136,6 @@ const renderTweet = (tweet) => {
   let children = tweets.filter(x => x.parentId == tweet.tweetId)
   return (
     <div className="tweetContainer" key={ "tweet" + tweet.tweetId }>
-    {console.log(tweet.owner + " / " + currentAccount)}
       <div className="tweet" id={ "tweet" + tweet.tweetId } >
         <span> Owner : { tweet.owner.toLowerCase() === currentAccount.toLowerCase() ? "You" : tweet.owner } </span> 
         { tweet.owner !== tweet.author && (<span><br/> Original author : { tweet.author } </span> )}
@@ -268,7 +267,6 @@ useEffect(() => {
 
 useEffect(() => {
   checkNetwork();
-  console.log(typeof currentAccount)
   if(contract === null)
   {
     loadContract();
