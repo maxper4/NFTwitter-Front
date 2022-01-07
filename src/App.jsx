@@ -12,6 +12,7 @@ const [contract, setContract] = useState(null);
 const [inputTweet, setInputTweet] = useState('')
 const [tweets, setTweets] = useState([])
 const [canPost, setCanPost] = useState(false)
+const [postingTweet, setPostingTweet] = useState(false)
 
 const loadContract = async () => {
   const { ethereum } = window;
@@ -32,7 +33,7 @@ const loadContract = async () => {
 
 const readTweet = (data) => {
   return {
-    tweetId: data.tweetId,
+    tweetId: data.tweetId.toNumber(),
     parentId: data.parentId.toNumber(),
     content: data.content,
     timestamp: data.timestamp.toNumber(),
@@ -52,9 +53,7 @@ const loadTweets = async () => {
       setTweets(result);
     }
     else
-    {    {
-      setTweets([]);
-    }
+    {   
       setTweets([]);
     }
   }
@@ -76,6 +75,11 @@ const onNewTweet = async(tweetId) => {
   catch (error) {
       console.error("Error reading new tweet", error);
   }
+}
+
+const onDeleteTweet = async(tweetId) => {
+  tweetId = tweetId.toNumber();
+  setTweets(tweets => tweets.filter(x => x.tweetId != tweetId));
 }
 
 const connectWalletAction = async () => {
@@ -129,26 +133,36 @@ const checkNetwork = async () => {
 }
 
 const renderTweet = (tweet) => {
+  let children = tweets.filter(x => x.parentId == tweet.tweetId)
   return (
-      <div className="tweet" id={ "tweet" + tweet.tweetId }>
-        <span> Owner : { tweet.owner } </span> 
+    <div className="tweetContainer" key={ "tweet" + tweet.tweetId }>
+    {console.log(tweet.owner + " / " + currentAccount)}
+      <div className="tweet" id={ "tweet" + tweet.tweetId } >
+        <span> Owner : { tweet.owner.toLowerCase() === currentAccount.toLowerCase() ? "You" : tweet.owner } </span> 
         { tweet.owner !== tweet.author && (<span><br/> Original author : { tweet.author } </span> )}
         <div className="tweetContent"> 
-          { tweet.content } 
+        <span>  { tweet.content } </span>
         </div>  
         <div className="tweetBtnContainer">
           <button className="replyBtn" onClick={() => postTweet(tweet.tweetId)}> Reply </button>
           <button className="viewOnOSBtn" onClick={() => window.open("https://testnets.opensea.io/assets/" +  CONTRACT_ADDRESS + "/" + tweet.tweetId)}> View on OpenSea </button>
-        </div>
-        <div className="childTweet"> 
-        {
-          tweets.filter(x => x.parentId == tweet.tweetId).map(child => 
-          (
-            renderTweet(child)
-          ))
-        }
+          <button className="likeBtn" onClick={() => alert("Sorry, not yet implemented.")}> Like </button>
         </div>
       </div>
+      {
+        children.length > 0 && 
+          ( 
+            <div className="childTweet" key={ "childTweets" + tweet.tweetId }> 
+              {
+                children.map(child => 
+                (
+                  renderTweet(child)
+                ))
+              }
+            </div>
+          )
+      }
+    </div>
   )
 }
 
@@ -171,14 +185,17 @@ const postTweet = async (parentId) => {
     {
       if(contract)
       {
+        setPostingTweet(true);
         const postTxn = await contract.tweet(inputTweet, parentId);
         await postTxn.wait();
 
+        setPostingTweet(false);
         setInputTweet("")
       }
     }
     catch(error) {
       console.warn("Post tweet Error: ", error);
+      setPostingTweet(false);
     }
   }
   else
@@ -192,9 +209,19 @@ const renderPostTweet = () => {
     <footer>
       <div className="postDiv"> 
         <textarea value={inputTweet} onInput={e => setInputTweet(e.target.value)}/>
-        <button onClick={() => postTweet(0)}> 
-          Post Tweet
-        </button>
+        { postingTweet ? 
+          ( <button disabled> 
+            Posting Tweet...
+            </button> 
+          ) 
+          : 
+          (
+            <button onClick={() => postTweet(0)} > 
+              Post Tweet
+            </button>
+          )
+        }
+        
       </div>
     </footer>
   );
@@ -233,18 +260,25 @@ useEffect(() => {
   loadTweets();
 
   if(contract)
-    contract.on('newTweet', onNewTweet);
+  {
+    contract.on("newTweet", onNewTweet);
+    contract.on("tweetDeleted", onDeleteTweet);
+  }
 }, [contract]);
 
 useEffect(() => {
   checkNetwork();
-  loadContract();
+  console.log(typeof currentAccount)
+  if(contract === null)
+  {
+    loadContract();
+  }
 }, [currentAccount]);
 
 useEffect(() => {
   setCanPost(inputTweet.length > 0)
 }, [inputTweet])
-//button to see full collection on OS
+
 return renderContent();
 };
 
