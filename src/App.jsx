@@ -376,10 +376,11 @@ const renderContent = () => {
       <div className="tweetsDiv">
         <button
           onClick={connectWalletAction}> 
-          Connect Metamask 
+          Connect with Metamask 
         </button>
 
       { tweets && renderTweets() } 
+      <footer> </footer>
       </div>
     );
   }
@@ -426,7 +427,8 @@ useEffect(() => {
 }, [contract]);
 
 useEffect(() => {
-  checkNetwork();
+  if(currentAccount != null)
+    checkNetwork();
 }, [currentAccount]);
 
 useEffect(() => {
