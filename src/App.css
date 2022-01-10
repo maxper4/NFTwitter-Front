@@ -89,6 +89,12 @@ span{
   border-bottom: 1px solid #4f532b;
 }
 
+.tweetInfos {
+  text-align: left;
+  font-style: italic;
+  font-size: 80%;
+}
+
 .childTweet {
   margin-left: 25px;
   margin-top: 2px;
@@ -111,11 +117,6 @@ button {
 
 .replyBtn {
   right: 2px;
-  position: absolute;
-  bottom:2px;
-}
-
-.likeBtn {
   position: absolute;
   bottom:2px;
 }
