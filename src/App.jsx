@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
 import { ethers } from 'ethers';
 
-const CONTRACT_ADDRESS = '0x7060CFC416b2D8C962B0Ba44C85826B1f0CCD14A';
+const CONTRACT_ADDRESS = '0x182dD618C81e7b1DaFC83f91857eD6c1D35dC1B6';
 import NFTwitter from './utils/NFTwitterContract.json';
 
 const App = () => {
@@ -25,11 +25,7 @@ const setCurrentAccount = (data) => {
 };
 
 const networkChanged = async (chainId) => {
-  const result = chainId == "0x4";
-  setCorrectChain(result);
-
-  if (!result)
-    checkNetwork();
+  window.location.reload(false);
 }
 
 const loadContract = async () => {
@@ -150,41 +146,70 @@ const connectWalletAction = async () => {
         return;
       }
 
+      const disconnected = localStorage.getItem("disconnected");
+      if(disconnected)
+      {
+        const overrides = {
+          eth_accounts: {} 
+        }
+        await ethereum.request({
+          method: 'wallet_requestPermissions', params: [overrides]
+        });
+      }
+
       const accounts = await ethereum.request({
-        method: 'eth_requestAccounts',
+        method: 'eth_requestAccounts'
       });
 
       setCurrentAccount(accounts[0]);
+
+      localStorage.setItem("disconnected", false);
     } catch (error) {
       console.log(error);
     }
   };
 
+const disconnectWalletAction = async () => {
+  localStorage.setItem("disconnected", true);
+  setCurrentAccount(null);
+}
+
+const onClickOpenSea = () => {
+  window.open('https://testnets.opensea.io/collection/nftwitter-1');
+}
+  
 const checkIfWalletIsConnected = async () => {
-    try {
-      const { ethereum } = window;
+  try {
+    const { ethereum } = window;
 
-      if (!ethereum) {
-        console.log('Make sure you have MetaMask!');
+    if (!ethereum) {
+      console.log('Make sure you have MetaMask!');
+      return;
+    } else {
+
+      const disconnected = localStorage.getItem("disconnected");
+      if(disconnected == "true")
+      {
         return;
-      } else {
-        const accounts = await ethereum.request({ method: 'eth_accounts' });
-
-        if (accounts.length !== 0) {
-          const account = accounts[0];
-          setCurrentAccount(account);
-        }
       }
-    } catch (error) {
-      console.log(error);
+
+      const accounts = await ethereum.request({ method: 'eth_accounts' });
+
+      if (accounts.length !== 0) {
+        const account = accounts[0];
+        setCurrentAccount(account);
+      }
     }
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 const checkNetwork = async () => {
   try { 
-    if (window.ethereum.networkVersion !== '4') {
-      await ethereum.request({ method: 'wallet_switchEthereumChain', params:[{chainId: '0x4'}]});
-      console.log("Please connect to Rinkeby!")
+    if (window.ethereum.networkVersion !== '5') {
+      await ethereum.request({ method: 'wallet_switchEthereumChain', params:[{chainId: '0x5'}]});
+      console.log("Please connect to Goerli !")
     }
     else if(!correctChain)
     {
@@ -342,14 +367,16 @@ const renderPostTweet = () => {
             </button>
           )
         }
-        
-      </div>
+      </div> 
+
+      <p> Made by maxper (twitter @maxper__) in React and Solidity. All sources are on my GitHub (@maxper4).</p>
     </footer>
   );
 }
 
 const renderTippingTweet = () => {
   return (
+    <>
     <div className="tweetsDiv"> 
       <button onClick={() => setTippingTweet(false)}> Back
       </button>
@@ -366,6 +393,10 @@ const renderTippingTweet = () => {
       </div>
       <button onClick={() => sendTip()} > Send tip </button>
     </div>
+    <footer>
+      <p> Made by maxper (twitter @maxper__) in React and Solidity. All sources are on my GitHub (@maxper4).</p>
+      </footer>
+      </>
   )
 }
 
@@ -373,21 +404,20 @@ const renderContent = () => {
   if(!currentAccount)
   {
     return (
+      <>
       <div className="tweetsDiv">
-        <button
-          onClick={connectWalletAction}> 
-          Connect with Metamask 
-        </button>
-
-      { tweets && renderTweets() } 
-      <footer> </footer>
       </div>
+      <footer>
+      <p> Made by maxper (twitter @maxper__) in React and Solidity. All sources are on my GitHub (@maxper4).</p>
+      </footer>
+      </>
     );
   }
   else
   {
     return (
       <div className="tweetsDiv">
+        
         { tweets && renderTweets() } 
         { renderPostTweet() }
       </div>
@@ -396,7 +426,7 @@ const renderContent = () => {
 }
 
 useEffect(() => {
-  checkIfWalletIsConnected();
+  checkNetwork();
   if(window.ethereum)
   {
     window.ethereum.on("chainChanged", networkChanged);
@@ -412,29 +442,36 @@ useEffect(() => {
 
   if(contract)
   {
-    contract.on("newTweet", onNewTweet);
-    contract.on("tweetDeleted", onDeleteTweet);
-    contract.on("tweetLiked", onTweetLiked);
-    contract.on("tweetUnliked", onTweetUnliked);
+    contract.on("NewTweet", onNewTweet);
+    contract.on("TweetDeleted", onDeleteTweet);
+    contract.on("TweetLiked", onTweetLiked);
+    contract.on("TweetUnliked", onTweetUnliked);
 
     return () => {
-      contract.off("newTweet", onNewTweet);
-      contract.off("tweetDeleted", onDeleteTweet);
-      contract.off("tweetLiked", onTweetLiked);
-      contract.off("tweetUnliked", onTweetUnliked);
+      contract.off("NewTweet", onNewTweet);
+      contract.off("TweetDeleted", onDeleteTweet);
+      contract.off("TweetLiked", onTweetLiked);
+      contract.off("TweetUnliked", onTweetUnliked);
     }
   }
 }, [contract]);
 
 useEffect(() => {
-  if(currentAccount != null)
-    checkNetwork();
-}, [currentAccount]);
-
-useEffect(() => {
-  if(correctChain && contract === null)
+  if(currentAccount != null && correctChain)
   {
     loadContract();
+  } else {
+    if(tippingTweet) {
+      setTippingTweet(false);
+    }
+    setContract(null);
+  }
+}, [currentAccount, correctChain]);
+
+useEffect(() => {
+  if(correctChain)
+  {
+    checkIfWalletIsConnected();
   }
 }, [correctChain]);
 
@@ -442,9 +479,49 @@ useEffect(() => {
   setCanPost(inputTweet.length > 0)
 }, [inputTweet])
 
-return (  
-  tippingTweet ? renderTippingTweet()
-  : renderContent()
+return (
+  <>
+  <header>
+      <h1> NFTwitter </h1>
+      <button onClick={ () => onClickOpenSea()}>
+        View collection on OpenSea 
+      </button> <br />
+    {
+      currentAccount 
+      && 
+        <button onClick={() => disconnectWalletAction()}> Disconnect </button>
+      || <button onClick={connectWalletAction}> 
+            Connect with Metamask 
+          </button>
+    }
+    </header>
+        {
+          currentAccount ? 
+          (
+            correctChain ?
+            (tippingTweet ? renderTippingTweet()
+              : renderContent())
+            : 
+            <>
+            <div className="tweetsDiv">
+              <p> Wrong Network </p> 
+              <button onClick={() => checkNetwork()}> Switch to Goerli</button>
+            </div>
+               <footer>
+              <p> Made by maxper (twitter @maxper__) in React and Solidity. All sources are on my GitHub (@maxper4).</p>
+              </footer>
+              </>)
+      :  
+          <>
+           <div className="tweetsDiv">
+              <p> Please connect your metamask </p> 
+            </div>
+          <footer>
+          <p> Made by maxper (twitter @maxper__) in React and Solidity. All sources are on my GitHub (@maxper4).</p>
+          </footer>
+          </>
+        }
+  </>
 )
 
 };

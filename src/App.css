@@ -12,7 +12,8 @@ body {
 }
 
 .tweetsDiv {
-  margin-top: 2em;
+  margin-top: 3em;
+  margin-bottom: 5em;
   width: 100%;
   text-align: center;
   z-index: 0;
@@ -35,16 +36,13 @@ header {
 footer {
   width: 100%;
   position: fixed;
-  bottom: 3em;
-  margin-bottom: 10px;
+  bottom: 0em;
   z-index: 1;
+  background-color: #222222;
 }
 
-footer::after {
-  right: 0;
-  bottom: 0;
-  position: fixed;
-  content: "Made by maxper (twitter @maxenceperion) in React and Solidity. All sources are on my GitHub (@maxper4).";
+footer p {
+  text-align: center;
 }
 
 .postDiv {
